@@ -28,7 +28,7 @@ export default function App() {
             longitude: -49.2036,
             latitudeDelta: 0.01,
             longitudeDelta: 0.01,
-          }}
+          }}                                                                                                            
         >
           <Marker
             coordinate={{ latitude: -25.5315, longitude: -49.2036 }}
