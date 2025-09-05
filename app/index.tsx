@@ -1,85 +1,128 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TouchableOpacity, Image } from 'react-native';
-import {useRouter} from 'expo-router'
+import { StyleSheet, Text, View, TouchableOpacity, FlatList } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useEffect, useState } from 'react';
+
+type Livro = {
+  titulo: string;
+  autor: string;
+  isbn: string;
+  paginas: string;
+  ano: string;
+};
 
 export default function App() {
   const router = useRouter();
+  const [livros, setLivros] = useState<Livro[]>([]);
+
+  useEffect(() => {
+    const loadCSV = async () => {
+      try {
+        const response = await fetch(
+          'https://raw.githubusercontent.com/leogoemann/app_biblioteca/main/assets/data/livros.csv'
+        );
+        const csvText = await response.text();
+        const data = parseCSV(csvText);
+        setLivros(data);
+      } catch (error) {
+        console.error('Erro ao carregar CSV:', error);
+      }
+    };
+
+    loadCSV();
+  }, []);
+
+  const parseCSV = (csv: string): Livro[] => {
+    const lines = csv.trim().split('\n');
+    const headers = lines[0].split(';').map(h => h.trim().toLowerCase());
+    return lines.slice(1).map(line => {
+      const values = line.split(';').map(v => v.trim());
+      const livro: any = {};
+      headers.forEach((header, index) => {
+        livro[header] = values[index];
+      });
+      return livro as Livro;
+    });
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.row}>
-          <Image source={require('../assets/cabalo.jpg')} style={styles.img}></Image>
-          <Image source={require('../assets/cabalo.jpg')} style={styles.img}></Image>
-      </View>
-      <View style={styles.row}>
-          <Image source={require('../assets/cabalo.jpg')} style={styles.img}></Image>
-          <Image source={require('../assets/cabalo.jpg')} style={styles.img}></Image>
-      </View>
-      <View style={styles.row}>
-          <Image source={require('../assets/cabalo.jpg')} style={styles.img}></Image>
-          <Image source={require('../assets/cabalo.jpg')} style={styles.img}></Image>
-      </View>
+      <Text style={styles.text}>Todos os livros</Text>
+
+      <FlatList
+        data={livros}
+        keyExtractor={(item, index) => `${item.isbn}-${index}`}
+        renderItem={({ item }) => (
+          <View style={styles.livroItem}>
+            <Text style={styles.livroTitulo}>{item.titulo}</Text>
+            <Text style={styles.livroAutor}>{item.autor}</Text>
+            <Text style={styles.livroInfo}>ISBN: {item.isbn}</Text>
+            <Text style={styles.livroInfo}>Páginas: {item.paginas} | Ano: {item.ano}</Text>
+          </View>
+        )}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      />
+
       <View style={styles.menu}>
-          <TouchableOpacity onPress={() => router.push('/')} style={styles.iconButton}>
-              <Ionicons name="home-outline" size={32} color="#fff"></Ionicons>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push('/pesquisa')} style={styles.iconButton}>
-              <Ionicons name="search-outline" size={32} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push('/bibliotecas')} style={styles.iconButton}>
-              <Ionicons name="location-outline" size={32} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push('/favoritos')} style={styles.iconButton}>
-              <Ionicons name="heart-outline" size={32} color="#fff" />
-          </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push('/')} style={styles.iconButton}>
+          <Ionicons name="home-outline" size={32} color="#fff" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push('/pesquisa')} style={styles.iconButton}>
+          <Ionicons name="search-outline" size={32} color="#fff" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push('/bibliotecas')} style={styles.iconButton}>
+          <Ionicons name="location-outline" size={32} color="#fff" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push('/favoritos')} style={styles.iconButton}>
+          <Ionicons name="heart-outline" size={32} color="#fff" />
+        </TouchableOpacity>
       </View>
     </View>
   );
-
 }
 
-type CustomButtonProps = {
-  text: string;
-  onPress: () => void;
-};
-
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#000000ff',
-        alignItems: 'center',
-    },
-    row: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        marginVertical: 20,
-    },
-        
-    menu: {
-      flexDirection: 'row',
-      justifyContent: 'space-around',
-      alignItems: 'center',
-      position: 'absolute',
-      bottom: 0,
-      width: '100%',
-      backgroundColor: '#000', // garante contraste
-      paddingVertical: 12,
-    },
-
-    iconButton: {
-        padding: 16,
-        borderRadius: 32,
-        marginBottom: 24,
-    },                 
-    
-    img: {
-      backgroundColor: '#eceff3ff',
-      paddingVertical: 12,
-      paddingHorizontal: 32,
-      borderRadius: 8,
-      marginHorizontal: 8,
-      elevation: 2,
-      height: 200,
-      width: 160,
-    },
+  container: {
+    flex: 1,
+    backgroundColor: '#000000ff',
+    alignItems: 'center',
+    paddingTop: 40,
+  },
+  text: {
+    color: '#fff',
+    fontSize: 24,
+    marginBottom: 16,
+  },
+  livroItem: {
+    marginBottom: 16,
+    paddingHorizontal: 16,
+  },
+  livroTitulo: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  livroAutor: {
+    color: '#ccc',
+    fontSize: 16,
+  },
+  livroInfo: {
+    color: '#aaa',
+    fontSize: 14,
+  },
+  menu: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+    backgroundColor: '#000',
+    paddingVertical: 12,
+  },
+  iconButton: {
+    padding: 16,
+    borderRadius: 32,
+    marginBottom: 24,
+  },
 });
