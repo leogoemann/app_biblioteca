@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { cores } from './config';
 
 type Livro = {
   titulo: string;
@@ -17,7 +18,7 @@ export default function Pesquisa() {
   const [livros, setLivros] = useState<Livro[]>([]);
   const [livrosFiltrados, setLivrosFiltrados] = useState<Livro[]>([]);
   const [termoBusca, setTermoBusca] = useState('');
-  const [favoritos, setFavoritos] = useState<string[]>([]); // lista de ISBNs
+  const [favoritos, setFavoritos] = useState<string[]>([]);
 
   useEffect(() => {
     const loadCSV = async () => {
@@ -127,18 +128,20 @@ export default function Pesquisa() {
         />
       )}
 
+
+
       <View style={styles.menu}>
         <TouchableOpacity onPress={() => router.push('/')} style={styles.iconButton}>
-          <Ionicons name="home-outline" size={32} color="#fff" />
+          <Ionicons name="home-outline" size={32} color={cores.accent} />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => router.push('/pesquisa')} style={styles.iconButton}>
-          <Ionicons name="search-outline" size={32} color="#fff" />
+          <Ionicons name="search-outline" size={32} color={cores.accent} />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => router.push('/bibliotecas')} style={styles.iconButton}>
-          <Ionicons name="location-outline" size={32} color="#fff" />
+          <Ionicons name="location-outline" size={32} color={cores.accent} />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => router.push('/favoritos')} style={styles.iconButton}>
-          <Ionicons name="heart-outline" size={32} color="#fff" />
+          <Ionicons name="heart-outline" size={32} color={cores.accent} />
         </TouchableOpacity>
       </View>
     </View>
@@ -148,14 +151,14 @@ export default function Pesquisa() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000ff',
+    backgroundColor: cores.background,
     alignItems: 'center',
     paddingTop: 40,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#222',
+    backgroundColor: cores.menuBackground,
     borderRadius: 8,
     paddingHorizontal: 12,
     margin: 16,
@@ -164,12 +167,12 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    color: '#fff',
+    color: cores.primaryText,
     paddingVertical: 8,
     paddingHorizontal: 8,
   },
   mensagemBusca: {
-    color: '#888',
+    color: cores.secondaryText,
     fontSize: 16,
     marginTop: 20,
     textAlign: 'center',
@@ -193,16 +196,16 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   livroTitulo: {
-    color: '#fff',
+    color: cores.primaryText,
     fontSize: 18,
     fontWeight: 'bold',
   },
   livroAutor: {
-    color: '#ccc',
+    color: cores.secondaryText,
     fontSize: 16,
   },
   livroInfo: {
-    color: '#aaa',
+    color: cores.infoText,
     fontSize: 14,
   },
   menu: {
@@ -212,7 +215,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     width: '100%',
-    backgroundColor: '#000',
+    backgroundColor: cores.menuBackground,
     paddingVertical: 12,
   },
   iconButton: {
@@ -221,3 +224,4 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
 });
+

@@ -2,6 +2,7 @@ import { StyleSheet, Text, View, TouchableOpacity, FlatList } from 'react-native
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
+import { cores } from './config';
 
 type Livro = {
   titulo: string;
@@ -81,33 +82,36 @@ export default function App() {
   );
 }
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000ff',
+    backgroundColor: cores.background,
     alignItems: 'center',
     paddingTop: 40,
   },
   text: {
-    color: '#fff',
-    fontSize: 24,
-    marginBottom: 16,
+    color: cores.primaryText,
+    fontSize: 35,
+    marginBottom: 25,
+    fontWeight: '700',
+    fontFamily: 'sans-serif-condensed',
   },
   livroItem: {
     marginBottom: 16,
     paddingHorizontal: 16,
   },
   livroTitulo: {
-    color: '#fff',
+    color: cores.primaryText,
     fontSize: 18,
     fontWeight: 'bold',
   },
   livroAutor: {
-    color: '#ccc',
+    color: cores.secondaryText,
     fontSize: 16,
   },
   livroInfo: {
-    color: '#aaa',
+    color: cores.infoText,
     fontSize: 14,
   },
   menu: {
@@ -117,7 +121,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     width: '100%',
-    backgroundColor: '#000',
+    backgroundColor: cores.menuBackground,
     paddingVertical: 12,
   },
   iconButton: {

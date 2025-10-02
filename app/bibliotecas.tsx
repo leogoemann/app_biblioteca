@@ -6,6 +6,7 @@ import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { useEffect, useState } from 'react';
+import { cores } from './config';
 
 export default function App() {
   const router = useRouter();
@@ -40,22 +41,22 @@ export default function App() {
 
       {!locationGranted && (
         <View style={styles.permissionWarning}>
-          <Ionicons name="alert-circle-outline" size={48} color="#fff" />
+          <Ionicons name="alert-circle-outline" size={48} color={cores.secondaryText} />
         </View>
       )}
 
       <View style={styles.menu}>
         <TouchableOpacity onPress={() => router.push('/')} style={styles.iconButton}>
-          <Ionicons name="home-outline" size={32} color="#fff" />
+          <Ionicons name="home-outline" size={32} color={cores.iconHighlight} />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => router.push('/pesquisa')} style={styles.iconButton}>
-          <Ionicons name="search-outline" size={32} color="#fff" />
+          <Ionicons name="search-outline" size={32} color={cores.iconHighlight} />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => router.push('/bibliotecas')} style={styles.iconButton}>
-          <Ionicons name="location-outline" size={32} color="#fff" />
+          <Ionicons name="location-outline" size={32} color={cores.iconHighlight} />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => router.push('/favoritos')} style={styles.iconButton}>
-          <Ionicons name="heart-outline" size={32} color="#fff" />
+          <Ionicons name="heart-outline" size={32} color={cores.iconHighlight} />
         </TouchableOpacity>
       </View>
 
@@ -67,7 +68,7 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: cores.background,
   },
   map: {
     flex: 1,
@@ -81,7 +82,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     width: '100%',
-    backgroundColor: '#000',
+    backgroundColor: cores.menuBackground,
     paddingVertical: 12,
   },
   iconButton: {
@@ -93,5 +94,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: cores.background,
   },
 });
