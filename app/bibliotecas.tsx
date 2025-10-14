@@ -142,7 +142,7 @@ export default function App() {
         </View>
       )}
 
-      <View style={{ position: 'absolute', top: 12, left: 12, right: 12, flexDirection: 'row', justifyContent: 'space-between', zIndex: 10 }}>
+      <View style={{ position: 'absolute', top: 75, left: 12, right: 12, flexDirection: 'row', justifyContent: 'space-between', zIndex: 10 }}>
         <TouchableOpacity onPress={() => refreshLocation()} style={{ backgroundColor: cores.menuBackground, padding: 8, borderRadius: 8 }}>
           <Text style={{ color: cores.primaryText }}>Atualizar localização</Text>
         </TouchableOpacity>

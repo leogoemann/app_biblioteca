@@ -7,7 +7,7 @@ import { cores } from './config';
 import { normalizeThumbnail, openLibraryCover } from './utils';
 
 type Livro = {
-  id?: string; // google volume id
+  id?: string;
   titulo: string;
   autor: string;
   isbn?: string;
@@ -18,7 +18,6 @@ type Livro = {
 
 export default function Pesquisa() {
   const router = useRouter();
-  // livrosFiltrados <- resultados da Google Books
   const [livrosFiltrados, setLivrosFiltrados] = useState<Livro[]>([]);
   const [termoBusca, setTermoBusca] = useState('');
   const [favoritos, setFavoritos] = useState<string[]>([]);
@@ -32,7 +31,7 @@ export default function Pesquisa() {
 
     loadFavoritos();
   }, []);
-  // Busca via Google Books API. Faz chamadas apenas quando o termo tiver >= 3 caracteres.
+
   const handleSearch = async (text: string) => {
     setTermoBusca(text);
     if (text.trim().length < 3) {
@@ -52,7 +51,7 @@ export default function Pesquisa() {
   const googleBooksSearch = async (q: string): Promise<Livro[]> => {
     const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=20`;
     const res = await fetch(url);
-  if (!res.ok) throw new Error(`Erro na API Google Books: status ${res.status}`);
+    if (!res.ok) throw new Error(`Erro na API Google Books: status ${res.status}`);
     const json = await res.json();
     const items = json.items ?? [];
     return items.map((item: any) => {
@@ -71,7 +70,6 @@ export default function Pesquisa() {
     });
   };
 
-  // Favoritos são armazenados preferencialmente pelo volume id (livro.id). Permitir compatibilidade com ISBNs antigos.
   const toggleFavorito = async (livro: Livro) => {
     const key = livro.id ?? livro.isbn ?? JSON.stringify(livro);
     let novosFavoritos: string[];
@@ -86,7 +84,7 @@ export default function Pesquisa() {
 
   const isFavorito = (livro: Livro) => {
     if (livro.id && favoritos.includes(livro.id)) return true;
-    if (livro.isbn && favoritos.includes(livro.isbn)) return true; // compatibility
+    if (livro.isbn && favoritos.includes(livro.isbn)) return true;
     return false;
   };
 
@@ -131,7 +129,7 @@ export default function Pesquisa() {
                   <Ionicons
                     name={isFavorito(item) ? 'heart' : 'heart-outline'}
                     size={24}
-                    color="#ff4d4d"
+                    color={cores.error}
                   />
                 </TouchableOpacity>
               </View>
@@ -140,8 +138,6 @@ export default function Pesquisa() {
           contentContainerStyle={{ paddingBottom: 100 }}
         />
       )}
-
-
 
       <View style={styles.menu}>
         <TouchableOpacity onPress={() => router.push('/')} style={styles.iconButton}>
@@ -237,4 +233,3 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
 });
-
