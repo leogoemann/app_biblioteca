@@ -10,7 +10,7 @@ export default function App() {
             <TouchableOpacity onPress={() => router.push('/')} style={styles.iconButton}>
             <Text style={styles.icon}>🏠</Text>
             </TouchableOpacity>
-            <Text style={{fontSize:30, color:'#fff'}}>TEXT</Text>
+            <Text style={{fontSize:30, color:'#fff'}}>Biblioteca</Text>
         </View>
         <View style={styles.row}>
             <Image source={require('../assets/cabalo.jpg')} style={styles.img}></Image>

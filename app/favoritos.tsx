@@ -1,136 +1,165 @@
-import { StyleSheet, Text, View, FlatList, TextInput, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, FlatList, TextInput, TouchableOpacity, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { cores } from './config';
-
+import { normalizeThumbnail, openLibraryCover } from './utils';
 
 type Livro = {
+  id?: string; // google volume id
   titulo: string;
-  autor: string;
-  isbn: string;
-  paginas: string;
-  ano: string;
+  autor?: string;
+  isbn?: string;
+  paginas?: string;
+  ano?: string;
+  thumbnail?: string;
 };
 
 export default function Favoritos() {
-  const [todosLivros, setTodosLivros] = useState<Livro[]>([]);
   const [favoritos, setFavoritos] = useState<string[]>([]);
-  const [livrosFiltrados, setLivrosFiltrados] = useState<Livro[]>([]);
+  const [livros, setLivros] = useState<Livro[]>([]);
   const [termoBusca, setTermoBusca] = useState('');
   const router = useRouter();
 
   useEffect(() => {
-    const carregarDados = async () => {
-      try {
-        const response = await fetch(
-          'https://raw.githubusercontent.com/leogoemann/app_biblioteca/main/assets/data/livros.csv'
-        );
-        const csvText = await response.text();
-        const livros = parseCSV(csvText);
-        setTodosLivros(livros);
-
-        const favJSON = await AsyncStorage.getItem('favoritos');
-        const favList: string[] = favJSON ? JSON.parse(favJSON) : [];
-        setFavoritos(favList);
-
-        const filtrados = livros.filter(l => favList.includes(l.isbn));
-        setLivrosFiltrados(filtrados);
-      } catch (error) {
-        console.error('Erro ao carregar favoritos:', error);
-      }
+    const load = async () => {
+      const favJSON = await AsyncStorage.getItem('favoritos');
+      const favList: string[] = favJSON ? JSON.parse(favJSON) : [];
+      setFavoritos(favList);
+      const detalhes = await Promise.all(favList.map(resolveFavorite));
+      setLivros(detalhes.filter(Boolean) as Livro[]);
     };
-
-    carregarDados();
+    load();
   }, []);
 
+  // resolve um favorito que pode ser um volume id (preferido) ou um ISBN antigo
+  const resolveFavorite = async (fav: string) => {
+    try {
+      // tentar tratar como volume id
+      const byId = await fetch(`https://www.googleapis.com/books/v1/volumes/${fav}`);
+      if (byId.ok) {
+        const json = await byId.json();
+        const info = json.volumeInfo ?? {};
+        return {
+          id: json.id,
+          titulo: info.title ?? 'Sem título',
+          autor: (info.authors || []).join(', '),
+          isbn: (info.industryIdentifiers || []).find((i: any) => i.type && i.identifier && i.type.toLowerCase().includes('isbn'))?.identifier,
+          paginas: info.pageCount ? String(info.pageCount) : undefined,
+          ano: info.publishedDate ? String(info.publishedDate).split('-')[0] : undefined,
+          thumbnail: info.imageLinks?.thumbnail,
+        } as Livro;
+      }
+    } catch (e) {
+      // não é volume id
+    }
+
+    // fallback: tratar como ISBN e pesquisar pela API
+    try {
+      const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(fav)}`);
+      if (!res.ok) return null;
+      const json = await res.json();
+      const item = (json.items || [])[0];
+      if (!item) return null;
+      const info = item.volumeInfo ?? {};
+      return {
+        id: item.id,
+        titulo: info.title ?? 'Sem título',
+        autor: (info.authors || []).join(', '),
+        isbn: fav,
+        paginas: info.pageCount ? String(info.pageCount) : undefined,
+        ano: info.publishedDate ? String(info.publishedDate).split('-')[0] : undefined,
+        thumbnail: info.imageLinks?.thumbnail,
+      } as Livro;
+    } catch (e) {
+      console.error('Erro resolvendo favorito', fav, e);
+      return null;
+    }
+  };
+
   useEffect(() => {
+    // filtrar por termo localmente
     const termo = termoBusca.toLowerCase();
-    const filtrados = todosLivros
-      .filter(l => favoritos.includes(l.isbn))
-      .filter(l =>
-        l.titulo.toLowerCase().includes(termo) ||
-        l.autor.toLowerCase().includes(termo)
-      );
-    setLivrosFiltrados(filtrados);
-  }, [termoBusca, favoritos]);
+    if (!termo) return;
+    const filtrados = livros.filter(l =>
+      (l.titulo || '').toLowerCase().includes(termo) ||
+      (l.autor || '').toLowerCase().includes(termo)
+    );
+    setLivros(filtrados);
+  }, [termoBusca]);
 
-  const parseCSV = (csv: string): Livro[] => {
-    const lines = csv.trim().split('\n');
-    const headers = lines[0].split(';').map(h => h.trim().toLowerCase());
-    return lines.slice(1).map(line => {
-      const values = line.split(';').map(v => v.trim());
-      const livro: any = {};
-      headers.forEach((header, index) => {
-        livro[header] = values[index];
-      });
-      return livro as Livro;
-    });
+  const removerFavorito = async (key?: string) => {
+    if (!key) return;
+    const novos = favoritos.filter(f => f !== key);
+    setFavoritos(novos);
+    await AsyncStorage.setItem('favoritos', JSON.stringify(novos));
+    setLivros(prev => prev.filter(l => l.id !== key && l.isbn !== key));
   };
 
-  const removerFavorito = async (isbn: string) => {
-    const novosFavoritos = favoritos.filter(f => f !== isbn);
-    setFavoritos(novosFavoritos);
-    await AsyncStorage.setItem('favoritos', JSON.stringify(novosFavoritos));
-  };
+  return (
+    <View style={styles.container}>
+      <Text style={styles.text}>Meus Favoritos</Text>
 
-return (
-  <View style={styles.container}>
-    {}
-    <Text style={styles.text}>Meus Favoritos</Text>
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Buscar nos favoritos..."
+          placeholderTextColor="#fff"
+          value={termoBusca}
+          onChangeText={setTermoBusca}
+        />
+      </View>
 
-    <View style={styles.searchContainer}>
-      <TextInput
-        style={styles.input}
-        placeholder="Buscar nos favoritos..."
-        placeholderTextColor="#fff"
-        value={termoBusca}
-        onChangeText={setTermoBusca}
-      />
-    </View>
-
-    {livrosFiltrados.length === 0 ? (
-      <Text style={styles.mensagem}>Nenhum favorito encontrado.</Text>
-    ) : (
-      <FlatList
-        data={livrosFiltrados}
-        keyExtractor={(item, index) => `${item.isbn}-${index}`}
-        renderItem={({ item }) => (
-          <View style={styles.livroItem}>
-            <View style={styles.livroRow}>
-              <View style={styles.livroInfoContainer}>
-                <Text style={styles.livroTitulo} numberOfLines={1}>{item.titulo}</Text>
-                <Text style={styles.livroAutor} numberOfLines={1}>{item.autor}</Text>
-                <Text style={styles.livroInfo}>ISBN: {item.isbn}</Text>
-                <Text style={styles.livroInfo}>Páginas: {item.paginas} | Ano: {item.ano}</Text>
-              </View>
-              <TouchableOpacity onPress={() => removerFavorito(item.isbn)} style={styles.favoritoButton}>
-                <Ionicons name="trash-outline" size={24} color="#ff4d4d" />
+      {livros.length === 0 ? (
+        <Text style={styles.mensagem}>Nenhum favorito encontrado.</Text>
+      ) : (
+        <FlatList
+          data={livros}
+          keyExtractor={(item, index) => `${item.id ?? item.isbn ?? index}`}
+          renderItem={({ item }) => (
+              <TouchableOpacity
+                onPress={() => router.push(`/detalhes/${encodeURIComponent(String(item.id ?? item.isbn ?? ''))}`)}
+                style={styles.livroItem}
+              >
+                  <View style={styles.livroRow}>
+                    {item.thumbnail ? (
+                      <Image source={{ uri: normalizeThumbnail(item.thumbnail) }} style={{ width: 60, height: 90, marginRight: 8 }} />
+                    ) : item.isbn ? (
+                      <Image source={{ uri: openLibraryCover(item.isbn, 'M') }} style={{ width: 60, height: 90, marginRight: 8 }} />
+                    ) : null}
+                    <View style={styles.livroInfoContainer}>
+                    <Text style={styles.livroTitulo} numberOfLines={1}>{item.titulo}</Text>
+                    <Text style={styles.livroAutor} numberOfLines={1}>{item.autor}</Text>
+                    <Text style={styles.livroInfo}>ISBN: {item.isbn}</Text>
+                    <Text style={styles.livroInfo}>Páginas: {item.paginas} | Ano: {item.ano}</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => removerFavorito(item.id ?? item.isbn)} style={styles.favoritoButton}>
+                    <Ionicons name="trash-outline" size={24} color="#ff4d4d" />
+                  </TouchableOpacity>
+                </View>
               </TouchableOpacity>
-            </View>
-          </View>
-        )}
-        contentContainerStyle={{ paddingBottom: 100 }}
-      />
-    )}
+            )}
+          contentContainerStyle={{ paddingBottom: 100 }}
+        />
+      )}
 
-    <View style={styles.menu}>
-      <TouchableOpacity onPress={() => router.push('/')} style={styles.iconButton}>
-        <Ionicons name="home-outline" size={32} color={cores.iconHighlight} />
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => router.push('/pesquisa')} style={styles.iconButton}>
-        <Ionicons name="search-outline" size={32} color={cores.iconHighlight} />
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => router.push('/bibliotecas')} style={styles.iconButton}>
-        <Ionicons name="location-outline" size={32} color={cores.iconHighlight} />
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => router.push('/favoritos')} style={styles.iconButton}>
-        <Ionicons name="heart-outline" size={32} color={cores.iconHighlight} />
-      </TouchableOpacity>
+      <View style={styles.menu}>
+        <TouchableOpacity onPress={() => router.push('/')} style={styles.iconButton}>
+          <Ionicons name="home-outline" size={32} color={cores.iconHighlight} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push('/pesquisa')} style={styles.iconButton}>
+          <Ionicons name="search-outline" size={32} color={cores.iconHighlight} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push('/bibliotecas')} style={styles.iconButton}>
+          <Ionicons name="location-outline" size={32} color={cores.iconHighlight} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push('/favoritos')} style={styles.iconButton}>
+          <Ionicons name="heart-outline" size={32} color={cores.iconHighlight} />
+        </TouchableOpacity>
+      </View>
     </View>
-  </View>
-);
+  );
 }
 
 const styles = StyleSheet.create({
@@ -151,6 +180,35 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingHorizontal: 16,
     width: '100%',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: cores.menuBackground,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    margin: 16,
+    marginTop: 35,
+    width: '90%',
+  },
+  input: {
+    flex: 1,
+    color: cores.primaryText,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+  },
+  livroRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+  },
+  livroInfoContainer: {
+    flex: 1,
+    paddingRight: 8,
+  },
+  favoritoButton: {
+    padding: 8,
   },
   livroTitulo: {
     color: cores.primaryText,
