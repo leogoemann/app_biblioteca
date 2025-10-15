@@ -1,39 +1,49 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TouchableOpacity, Image } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Image, SafeAreaView, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { cores } from './config';
 
 export default function App() {
   const router = useRouter();
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.menu}>
         <TouchableOpacity onPress={() => router.push('/')} style={styles.iconButton}>
-          <Text style={styles.icon}>🏠</Text>
+          <Ionicons name="home-outline" size={32} color={cores.iconHighlight} />
         </TouchableOpacity>
         <Text style={styles.menuTitle}>Biblioteca</Text>
       </View>
-      <View style={styles.row}>
-        <Image source={require('../assets/cabalo.jpg')} style={styles.img} />
-        <Image source={require('../assets/cabalo.jpg')} style={styles.img} />
-      </View>
-      <View style={styles.row}>
-        <Image source={require('../assets/cabalo.jpg')} style={styles.img} />
-        <Image source={require('../assets/cabalo.jpg')} style={styles.img} />
-      </View>
-      <View style={styles.row}>
-        <Image source={require('../assets/cabalo.jpg')} style={styles.img} />
-        <Image source={require('../assets/cabalo.jpg')} style={styles.img} />
-      </View>
+
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.row}>
+          <Image source={require('../assets/cabalo.jpg')} style={styles.img} />
+          <Image source={require('../assets/cabalo.jpg')} style={styles.img} />
+        </View>
+        <View style={styles.row}>
+          <Image source={require('../assets/cabalo.jpg')} style={styles.img} />
+          <Image source={require('../assets/cabalo.jpg')} style={styles.img} />
+        </View>
+        <View style={styles.row}>
+          <Image source={require('../assets/cabalo.jpg')} style={styles.img} />
+          <Image source={require('../assets/cabalo.jpg')} style={styles.img} />
+        </View>
+      </ScrollView>
+
       <StatusBar style="auto" />
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#BFB493',
+    backgroundColor: cores.background,
+  },
+  content: {
     alignItems: 'center',
+    paddingBottom: 20,
   },
   row: {
     flexDirection: 'row',
@@ -42,26 +52,20 @@ const styles = StyleSheet.create({
   },
   menu: {
     flexDirection: 'row',
-    justifyContent: 'flex-start',
     alignItems: 'center',
     width: '100%',
     paddingHorizontal: 16,
-    backgroundColor: '#BFB493',
-    paddingTop: 40,
+    backgroundColor: cores.menuBackground,
+    paddingTop: 16,
     paddingBottom: 16,
   },
   iconButton: {
     padding: 16,
     borderRadius: 32,
   },
-  icon: {
-    fontSize: 32,
-    color: '#A67051',
-    textAlign: 'center',
-  },
   menuTitle: {
     fontSize: 30,
-    color: '#593520',
+    color: cores.primaryText,
     marginLeft: 16,
     fontWeight: 'bold',
   },
@@ -73,6 +77,6 @@ const styles = StyleSheet.create({
     height: 200,
     width: 160,
     borderWidth: 2,
-    borderColor: '#A67051',
+    borderColor: cores.secondary,
   },
 });
