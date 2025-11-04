@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import Icon from 'react-native-vector-icons/Feather';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import {
   View,
   Text,
@@ -11,23 +12,14 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
+import { loginUser } from './utils';
 
 const emailRegex = /^\S+@\S+\.\S+$/;
 
-export default function LoginScreen({
-  onLogin = async (creds) => {
-    // placeholder: substitua por chamada de API/Firebase/etc.
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (creds.email === 'user@example.com' && creds.password === 'password') resolve({ ok: true });
-        else reject(new Error('Credenciais inválidas'));
-      }, 1000);
-    });
-  },
-  onForgotPassword = () => {},
-  onSignUp = () => {},
-}) {
+export default function LoginScreen() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [secure, setSecure] = useState(true);
@@ -51,9 +43,10 @@ export default function LoginScreen({
     if (!validate()) return;
     setLoading(true);
     try {
-      await onLogin({ email: email.trim(), password });
-      // se onLogin não lançar erro, presume-se sucesso
-    } catch (err) {
+      await loginUser(email.trim(), password);
+      Alert.alert('Sucesso', 'Login realizado com sucesso!');
+      router.replace('/');
+    } catch (err: any) {
       setError(err.message || 'Erro ao autenticar.');
     } finally {
       setLoading(false);
@@ -67,7 +60,7 @@ export default function LoginScreen({
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.inner}>
-          <Text style={styles.title} accessibilityRole="header">Bem-vindo!</Text>
+          <Text style={styles.title}>Bem-vindo!</Text>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>E‑mail</Text>
@@ -77,13 +70,8 @@ export default function LoginScreen({
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
-              autoCompleteType="email"
-              textContentType="emailAddress"
               placeholder="Digite seu E-mail"
-              accessible
-              accessibilityLabel="Campo de email"
               returnKeyType="next"
-              onSubmitEditing={() => { /* focus senha se desejar */ }}
             />
           </View>
 
@@ -96,23 +84,15 @@ export default function LoginScreen({
                 onChangeText={setPassword}
                 secureTextEntry={secure}
                 autoCapitalize="none"
-                autoCompleteType="password"
-                textContentType="password"
                 placeholder="Digite sua senha"
-                accessible
-                accessibilityLabel="Campo de senha"
                 returnKeyType="done"
                 onSubmitEditing={handleLogin}
               />
               <TouchableOpacity
-                onPress={() => setSecure((s) => !s)}
+                onPress={() => setSecure(!secure)}
                 style={styles.showButton}
-                accessibilityRole="button"
-                accessibilityLabel={secure ? 'Mostrar senha' : 'Ocultar senha'}
               >
-                <TouchableOpacity onPress={() => setSecure(!secure)}>
-                  <Icon name={secure ? 'eye-off' : 'eye'} size={22} color="#000" />
-                </TouchableOpacity>
+                <Ionicons name={secure ? 'eye-off-outline' : 'eye-outline'} size={22} color="#000" />
               </TouchableOpacity>
             </View>
           </View>
@@ -123,21 +103,20 @@ export default function LoginScreen({
             style={[styles.button, loading ? styles.buttonDisabled : null]}
             onPress={handleLogin}
             disabled={loading}
-            accessibilityRole="button"
           >
             {loading ? (
-              <ActivityIndicator />
+              <ActivityIndicator color="#fff" />
             ) : (
               <Text style={styles.buttonText}>Entrar</Text>
             )}
           </TouchableOpacity>
 
           <View style={styles.rowSpace}>
-            <TouchableOpacity onPress={onForgotPassword} accessibilityRole="button">
+            <TouchableOpacity onPress={() => router.push('/redefine-senha')}>
               <Text style={styles.link}>Esqueci a senha</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={onSignUp} accessibilityRole="button">
+            <TouchableOpacity onPress={() => router.push('/criar-conta')}>
               <Text style={styles.link}>Criar conta</Text>
             </TouchableOpacity>
           </View>
@@ -193,7 +172,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 6,
   },
-  
   button: {
     marginTop: 12,
     backgroundColor: '#733620',

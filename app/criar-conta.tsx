@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import Icon from 'react-native-vector-icons/Feather';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import {
   View,
   Text,
@@ -11,21 +12,14 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
+import { saveUser } from './utils';
 
 const emailRegex = /^\S+@\S+\.\S+$/;
 
-export default function SignUpScreen({
-  onSignUp = async (data) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (data.email && data.password) resolve({ ok: true });
-        else reject(new Error('Erro ao criar conta'));
-      }, 1000);
-    });
-  },
-  onLogin = () => {},
-}) {
+export default function SignUpScreen() {
+  const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -60,8 +54,11 @@ export default function SignUpScreen({
     if (!validate()) return;
     setLoading(true);
     try {
-      await onSignUp({ name: name.trim(), email: email.trim(), password });
-    } catch (err) {
+      await saveUser({ name: name.trim(), email: email.trim(), password });
+      Alert.alert('Sucesso', 'Conta criada com sucesso! Faça login para continuar.', [
+        { text: 'OK', onPress: () => router.replace('/login') }
+      ]);
+    } catch (err: any) {
       setError(err.message || 'Erro ao criar conta.');
     } finally {
       setLoading(false);
@@ -111,7 +108,7 @@ export default function SignUpScreen({
                 placeholder="Digite sua senha"
               />
               <TouchableOpacity onPress={() => setSecurePassword(!securePassword)} style={styles.showButton}>
-                <Icon name={securePassword ? 'eye-off' : 'eye'} size={22} color="#000" />
+                <Ionicons name={securePassword ? 'eye-off-outline' : 'eye-outline'} size={22} color="#000" />
               </TouchableOpacity>
             </View>
           </View>
@@ -127,7 +124,7 @@ export default function SignUpScreen({
                 placeholder="Confirme sua senha"
               />
               <TouchableOpacity onPress={() => setSecureConfirm(!secureConfirm)} style={styles.showButton}>
-                <Icon name={secureConfirm ? 'eye-off' : 'eye'} size={22} color="#000" />
+                <Ionicons name={secureConfirm ? 'eye-off-outline' : 'eye-outline'} size={22} color="#000" />
               </TouchableOpacity>
             </View>
           </View>
@@ -139,12 +136,12 @@ export default function SignUpScreen({
             onPress={handleSignUp}
             disabled={loading}
           >
-            {loading ? <ActivityIndicator /> : <Text style={styles.buttonText}>Criar Conta</Text>}
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Criar Conta</Text>}
           </TouchableOpacity>
 
           <View style={styles.rowCenter}>
             <Text style={styles.label}>Já tem uma conta? </Text>
-            <TouchableOpacity onPress={onLogin}>
+            <TouchableOpacity onPress={() => router.push('/login')}>
               <Text style={styles.link}>Entrar</Text>
             </TouchableOpacity>
           </View>

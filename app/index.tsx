@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { cores } from './config';
-import { normalizeThumbnail, openLibraryCover } from './utils';
+import { normalizeThumbnail, openLibraryCover, getCurrentUser, logoutUser } from './utils';
 
 type Livro = {
   id?: string;
@@ -24,43 +24,58 @@ export default function App() {
   const [showRawCategories, setShowRawCategories] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>('');
 
   useEffect(() => {
-    const loadDefault = async () => {
-      setLoading(true);
-      try {
-        // fetch multiple subjects in parallel to populate more books
-        const subjects = ['fiction', 'romance', 'fantasy', 'history', 'science'];
-        const pages = await Promise.all(subjects.map(s => googleBooksSearch(`subject:${s}`, 20)));
-        // flatten and dedupe by id and collect raw categories
-        const combined: Livro[] = [];
-        const seen = new Set<string>();
-        const rawSet = new Set<string>();
-        pages.flat().forEach(b => {
-          const key = b.id ?? b.isbn ?? JSON.stringify(b);
-          if (!seen.has(key)) {
-            seen.add(key);
-            combined.push(b);
-            (b.categories || []).forEach(c => rawSet.add(String(c)));
-          }
-        });
-        setRawCategories(Array.from(rawSet).sort());
-        setLivros(combined);
-        setGroups(groupByGenre(combined));
-      } catch (e: any) {
-        console.error('Erro ao carregar livros:', e);
-        setError(String(e));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadDefault();
+    checkAuth();
   }, []);
+
+  const checkAuth = async () => {
+    const user = await getCurrentUser();
+    if (!user) {
+      router.replace('/login');
+    } else {
+      setUserName(user.name);
+      await loadDefault();
+    }
+  };
+
+  const handleLogout = async () => {
+    await logoutUser();
+    router.replace('/login');
+  };
+
+  const loadDefault = async () => {
+    setLoading(true);
+    try {
+      const subjects = ['fiction', 'romance', 'fantasy', 'history', 'science'];
+      const pages = await Promise.all(subjects.map(s => googleBooksSearch(`subject:${s}`, 20)));
+      const combined: Livro[] = [];
+      const seen = new Set<string>();
+      const rawSet = new Set<string>();
+      pages.flat().forEach(b => {
+        const key = b.id ?? b.isbn ?? JSON.stringify(b);
+        if (!seen.has(key)) {
+          seen.add(key);
+          combined.push(b);
+          (b.categories || []).forEach(c => rawSet.add(String(c)));
+        }
+      });
+      setRawCategories(Array.from(rawSet).sort());
+      setLivros(combined);
+      setGroups(groupByGenre(combined));
+    } catch (e: any) {
+      console.error('Erro ao carregar livros:', e);
+      setError(String(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const googleBooksSearch = async (q: string, maxResults = 20): Promise<Livro[]> => {
-  const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=${maxResults}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Erro na API Google Books: status ${res.status}`);
+    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=${maxResults}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Erro na API Google Books: status ${res.status}`);
     const json = await res.json();
     const items = json.items ?? [];
     return items.map((item: any) => {
@@ -133,7 +148,17 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Todos os livros</Text>
+      <View style={styles.header}>
+        <Text style={styles.text}>Todos os livros</Text>
+        {userName && (
+          <View style={styles.userInfo}>
+            <Text style={styles.userName}>Olá, {userName}</Text>
+            <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+              <Ionicons name="log-out-outline" size={24} color={cores.primaryText} />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
 
       {loading && <Text style={{ color: cores.secondaryText, marginTop: 20 }}>Carregando livros...</Text>}
       {error && <Text style={{ color: 'red' }}>{error}</Text>}
@@ -208,12 +233,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 40,
   },
+  header: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 25,
+  },
   text: {
     color: cores.primaryText,
     fontSize: 35,
-    marginBottom: 25,
     fontWeight: '700',
     fontFamily: 'sans-serif-condensed',
+  },
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  userName: {
+    color: cores.primaryText,
+    fontSize: 16,
+    marginRight: 8,
+  },
+  logoutButton: {
+    padding: 8,
   },
   livroItem: {
     marginBottom: 16,
