@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { cores } from './config';
-import { normalizeThumbnail, openLibraryCover, getCurrentUser, logoutUser } from './utils';
+import { normalizeThumbnail, openLibraryCover, getCurrentUser, logoutUser, sendLocalNotification } from './utils';
 
 type Livro = {
   id?: string;
@@ -17,6 +17,10 @@ type Livro = {
 };
 
 export default function App() {
+  // Solicita permissão para notificações ao iniciar
+  useEffect(() => {
+    Notifications.requestPermissionsAsync();
+  }, []);
   const router = useRouter();
   const [livros, setLivros] = useState<Livro[]>([]);
   const [groups, setGroups] = useState<{ genre: string; data: Livro[] }[]>([]);
@@ -42,6 +46,7 @@ export default function App() {
 
   const handleLogout = async () => {
     await logoutUser();
+    sendLocalNotification('Logout realizado', 'Você saiu da sua conta com sucesso.');
     router.replace('/login');
   };
 
@@ -67,6 +72,14 @@ export default function App() {
     } catch (e: any) {
       console.error('Erro ao carregar livros:', e);
       setError(String(e));
+      // Notificação local de erro
+      Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Erro ao carregar livros',
+          body: String(e),
+        },
+        trigger: null,
+      });
     } finally {
       setLoading(false);
     }
